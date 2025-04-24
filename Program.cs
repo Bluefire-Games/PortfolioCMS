@@ -1,12 +1,22 @@
 using Microsoft.AspNetCore.Components;
 using Microsoft.AspNetCore.Components.Web;
 using PortfolioCMS.Data;
+using Microsoft.EntityFrameworkCore;
+using PortfolioCMS.Data;
+using PortfolioCMS.Data.Repositories;
+using PortfolioCMS.Services;
 
 var builder = WebApplication.CreateBuilder(args);
+
+builder.Services.AddDbContext<PortfolioDbContext>(options =>
+    options.UseSqlite("Data Source=portfolio.db"));
+
 
 // Add services to the container.
 builder.Services.AddRazorPages();
 builder.Services.AddServerSideBlazor();
+builder.Services.AddScoped<IProjectRepository, ProjectRepository>();
+builder.Services.AddScoped<IProjectService, ProjectService>();
 builder.Services.AddSingleton<WeatherForecastService>();
 
 var app = builder.Build();

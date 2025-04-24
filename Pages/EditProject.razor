@@ -1,0 +1,81 @@
+﻿@page "/projects/edit/{Id:int}"
+@inject IProjectService ProjectService
+@inject IWebHostEnvironment Env
+@inject NavigationManager Nav
+@using PortfolioCMS.Models
+@using PortfolioCMS.Services
+
+<h3>Edit Project</h3>
+
+<EditForm Model="@project" OnValidSubmit="SaveChanges">
+    <DataAnnotationsValidator />
+    <ValidationSummary />
+
+    <InputText @bind-Value="project.Title" class="form-control mb-2" placeholder="Title" />
+    <InputTextArea @bind-Value="project.Description" class="form-control mb-2" rows="5" placeholder="Description" />
+    <InputText @bind-Value="project.RepoLink" class="form-control mb-2" placeholder="Repository Link" />
+
+    <h5 class="mt-3">Current Images</h5>
+    <div class="d-flex flex-wrap gap-2 mb-2">
+        @if (project.Images != null)
+        {
+            @foreach (var image in project.Images)
+            {
+                <img src="@("/" + image.Path)" class="img-thumbnail" style="max-height: 150px;" />
+            }
+        }
+    </div>
+
+    <h5 class="mt-3">Add New Images</h5>
+    <InputFile OnChange="OnImageSelected" multiple />
+    <div class="d-flex flex-wrap gap-2 mt-2">
+        @foreach (var preview in newImagePreviews)
+        {
+            <img src="@preview" class="img-thumbnail" style="max-height: 150px;" />
+        }
+    </div>
+
+    <button class="btn btn-primary mt-3">Update Project</button>
+</EditForm>
+
+@code {
+    [Parameter] public int Id { get; set; }
+    private Project project = new();
+    private List<string> newImagePaths = new();
+    private List<string> newImagePreviews = new();
+
+    protected override async Task OnInitializedAsync()
+    {
+        project = await ProjectService.GetProjectAsync(Id) ?? new();
+    }
+
+    private async Task OnImageSelected(InputFileChangeEventArgs e)
+    {
+        foreach (var file in e.GetMultipleFiles())
+        {
+            var uploads = Path.Combine(Env.WebRootPath, "images");
+            Directory.CreateDirectory(uploads);
+
+            var fileName = $"{Guid.NewGuid()}{Path.GetExtension(file.Name)}";
+            var filePath = Path.Combine(uploads, fileName);
+
+            await using var fs = new FileStream(filePath, FileMode.Create);
+            await file.OpenReadStream(10_000_000).CopyToAsync(fs);
+
+            var relativePath = $"images/{fileName}";
+            newImagePaths.Add(relativePath);
+            newImagePreviews.Add("/" + relativePath);
+        }
+    }
+
+    private async Task SaveChanges()
+    {
+        foreach (var newPath in newImagePaths)
+        {
+            project.Images.Add(new ProjectImage { Path = newPath });
+        }
+
+        await ProjectService.UpdateProjectAsync(project);
+        Nav.NavigateTo("/projects");
+    }
+}

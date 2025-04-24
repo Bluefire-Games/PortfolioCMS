@@ -1,0 +1,51 @@
+﻿@page "/projects/view/{Id:int}"
+@inject PortfolioDbContext Db
+@using Microsoft.EntityFrameworkCore
+
+@using PortfolioCMS.Data
+@using PortfolioCMS.Models
+@using PortfolioCMS.Helpers
+
+<h3>@project?.Title</h3>
+
+@if (project == null)
+{
+    <p>Loading...</p>
+}
+else
+{
+    <div>
+        <div class="mb-3">
+            @if (project.Images?.Any() == true)
+            {
+                <div class="d-flex flex-wrap gap-2">
+                    @foreach (var img in project.Images)
+                    {
+                        <img src="@img.Path" class="img-thumbnail" style="max-height: 200px;" />
+                    }
+                </div>
+            }
+        </div>
+
+        <p><strong>Repo:</strong> <a href="@project.RepoLink" target="_blank">@project.RepoLink</a></p>
+
+        <div>
+            @((MarkupString)MarkdownHelper.ToHtml(project.Description))
+        </div>
+    </div>
+
+    <a href="/projects" class="btn btn-secondary mb-3">← Back to Projects</a>
+}
+
+@code {
+    [Parameter] public int Id { get; set; }
+
+    private Project? project;
+
+    protected override async Task OnInitializedAsync()
+    {
+        project = await Db.Projects
+            .Include(p => p.Images)
+            .FirstOrDefaultAsync(p => p.Id == Id);
+    }
+}

@@ -1,0 +1,63 @@
+﻿@page "/projects/create"
+@using PortfolioCMS.Models
+@using PortfolioCMS.Services
+@inject IProjectService ProjectService
+@inject IWebHostEnvironment Env
+@inject NavigationManager Nav
+
+<EditForm Model="@project" OnValidSubmit="SaveProject">
+    <DataAnnotationsValidator />
+    <ValidationSummary />
+
+    <InputText @bind-Value="project.Title" class="form-control mb-2" placeholder="Title" />
+    <InputTextArea @bind-Value="project.Description" class="form-control mb-2" rows="4" placeholder="Description" />
+    <InputText @bind-Value="project.RepoLink" class="form-control mb-2" placeholder="Repo Link" />
+
+    <InputFile OnChange="OnImageSelected" multiple />
+    <div class="d-flex flex-wrap gap-2">
+        @foreach (var img in previewImages)
+        {
+            <img src="@img" class="img-thumbnail" style="max-height: 150px;" />
+        }
+    </div>
+
+    <button class="btn btn-primary mt-3">Create Project</button>
+</EditForm>
+
+@code {
+    private Project project = new();
+    private List<string> previewImages = new();
+    private List<string> uploadedPaths = new();
+
+    private async Task OnImageSelected(InputFileChangeEventArgs e)
+    {
+        foreach (var file in e.GetMultipleFiles())
+        {
+            var uploads = Path.Combine(Env.WebRootPath, "images");
+            Directory.CreateDirectory(uploads);
+
+            var fileName = $"{Guid.NewGuid()}{Path.GetExtension(file.Name)}";
+            var path = Path.Combine(uploads, fileName);
+
+            await using var fs = new FileStream(path, FileMode.Create);
+            await file.OpenReadStream(10_000_000).CopyToAsync(fs);
+
+            var relativePath = $"images/{fileName}";
+            uploadedPaths.Add(relativePath);
+            previewImages.Add($"/{relativePath}");
+        }
+    }
+
+    private async Task SaveProject()
+    {
+        project.CreatedAt = DateTime.Now;
+
+        foreach (var imgPath in uploadedPaths)
+        {
+            project.Images.Add(new ProjectImage { Path = imgPath });
+        }
+
+        await ProjectService.CreateProjectAsync(project);
+        Nav.NavigateTo("/projects");
+    }
+}
