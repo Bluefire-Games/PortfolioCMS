@@ -1,19 +1,49 @@
 ﻿@inherits LayoutComponentBase
 
-<PageTitle>PortfolioCMS</PageTitle>
-
-<div class="page">
-    <div class="sidebar">
-        <NavMenu />
-    </div>
-
-    <main>
-        <div class="top-row px-4">
-            <a href="https://docs.microsoft.com/aspnet/" target="_blank">About</a>
+<div class="top-navbar">
+    <div class="navbar-container">
+        <div class="nav-left">
+            <a class="navbar-brand" href="/">
+                <img src="images\42b2f55a-5255-44a6-bfd8-9a652c06b660.png" alt="Logo" class="navbar-logo" />
+            </a>
+            <NavLink class="nav-link" href="/" Match="NavLinkMatch.All">Home</NavLink>
+            <NavLink class="nav-link" href="/projects">Projects</NavLink>
         </div>
 
-        <article class="content px-4">
-            @Body
-        </article>
-    </main>
+        <div class="nav-right">
+            <button class="theme-toggle btn btn-sm" @onclick="ToggleTheme">
+                @(isDarkMode ? "🌙 Dark Mode" : "🔆 Light Mode")
+            </button>
+        </div>
+    </div>
 </div>
+
+<div class="main-content p-4">
+    @Body
+</div>
+
+@code {
+    private bool isDarkMode = false;
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender)
+        {
+            var theme = await JS.InvokeAsync<string>("localStorage.getItem", "theme");
+            isDarkMode = theme == "dark";
+            var bodyClass = isDarkMode ? "dark-mode" : "";
+            await JS.InvokeVoidAsync("setBodyClass", bodyClass);
+            StateHasChanged();
+        }
+    }
+
+    private async Task ToggleTheme()
+    {
+        isDarkMode = !isDarkMode;
+        var bodyClass = isDarkMode ? "dark-mode" : "";
+        await JS.InvokeVoidAsync("setBodyClass", bodyClass);
+        await JS.InvokeVoidAsync("localStorage.setItem", "theme", isDarkMode ? "dark" : "light");
+    }
+
+    [Inject] private IJSRuntime JS { get; set; } = default!;
+}

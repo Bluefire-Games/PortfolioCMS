@@ -20,6 +20,13 @@ namespace PortfolioCMS.Models
         public DateTime CreatedAt { get; set; } = DateTime.Now;
 
         public List<ProjectImage> Images { get; set; } = new();
+
+        public int? CategoryId { get; set; }
+        public Category? Category { get; set; }
+
+        public List<ProjectTag> ProjectTags { get; set; } = new();
     }
+
+
 
 }

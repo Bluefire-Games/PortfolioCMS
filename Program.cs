@@ -15,9 +15,9 @@ builder.Services.AddDbContext<PortfolioDbContext>(options =>
 // Add services to the container.
 builder.Services.AddRazorPages();
 builder.Services.AddServerSideBlazor();
-builder.Services.AddScoped<IProjectRepository, ProjectRepository>();
+builder.Services.AddDbContext<PortfolioDbContext>(options =>
+    options.UseSqlite(builder.Configuration.GetConnectionString("DefaultConnection")));
 builder.Services.AddScoped<IProjectService, ProjectService>();
-builder.Services.AddSingleton<WeatherForecastService>();
 
 var app = builder.Build();
 

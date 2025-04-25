@@ -1,0 +1,30 @@
+﻿<button @onclick="ToggleTheme" class="@Class">@buttonText</button>
+
+@code {
+    private string buttonText = "🌙 Dark Mode";
+
+    [Parameter] public string? Class { get; set; }
+
+    [Inject] private IJSRuntime JS { get; set; } = default!;
+    private bool hasInitialized = false;
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender && !hasInitialized)
+        {
+            hasInitialized = true;
+
+            var theme = await JS.InvokeAsync<string>("localStorage.getItem", "theme");
+            buttonText = theme == "dark" ? "☀️ Light Mode" : "🌙 Dark Mode";
+            StateHasChanged();
+        }
+    }
+
+    private async Task ToggleTheme()
+    {
+        await JS.InvokeVoidAsync("toggleTheme");
+
+        var theme = await JS.InvokeAsync<string>("localStorage.getItem", "theme");
+        buttonText = theme == "dark" ? "☀️ Light Mode" : "🌙 Dark Mode";
+    }
+}

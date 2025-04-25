@@ -2,6 +2,7 @@
 using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using PortfolioCMS.Data;
 
@@ -10,9 +11,11 @@ using PortfolioCMS.Data;
 namespace PortfolioCMS.Migrations
 {
     [DbContext(typeof(PortfolioDbContext))]
-    partial class PortfolioDbContextModelSnapshot : ModelSnapshot
+    [Migration("20250425124044_AddProjectTagsAndCategory")]
+    partial class AddProjectTagsAndCategory
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder.HasAnnotation("ProductVersion", "7.0.17");
@@ -83,27 +86,6 @@ namespace PortfolioCMS.Migrations
                     b.ToTable("ProjectImages");
                 });
 
-            modelBuilder.Entity("PortfolioCMS.Models.ProjectTag", b =>
-                {
-                    b.Property<int>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("INTEGER");
-
-                    b.Property<int>("ProjectId")
-                        .HasColumnType("INTEGER");
-
-                    b.Property<int>("TagId")
-                        .HasColumnType("INTEGER");
-
-                    b.HasKey("Id");
-
-                    b.HasIndex("ProjectId");
-
-                    b.HasIndex("TagId");
-
-                    b.ToTable("ProjectTags");
-                });
-
             modelBuilder.Entity("PortfolioCMS.Models.Tag", b =>
                 {
                     b.Property<int>("Id")
@@ -117,6 +99,21 @@ namespace PortfolioCMS.Migrations
                     b.HasKey("Id");
 
                     b.ToTable("Tags");
+                });
+
+            modelBuilder.Entity("ProjectTag", b =>
+                {
+                    b.Property<int>("ProjectsId")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<int>("TagsId")
+                        .HasColumnType("INTEGER");
+
+                    b.HasKey("ProjectsId", "TagsId");
+
+                    b.HasIndex("TagsId");
+
+                    b.ToTable("ProjectTag");
                 });
 
             modelBuilder.Entity("PortfolioCMS.Models.Project", b =>
@@ -139,23 +136,19 @@ namespace PortfolioCMS.Migrations
                     b.Navigation("Project");
                 });
 
-            modelBuilder.Entity("PortfolioCMS.Models.ProjectTag", b =>
+            modelBuilder.Entity("ProjectTag", b =>
                 {
-                    b.HasOne("PortfolioCMS.Models.Project", "Project")
-                        .WithMany("ProjectTags")
-                        .HasForeignKey("ProjectId")
+                    b.HasOne("PortfolioCMS.Models.Project", null)
+                        .WithMany()
+                        .HasForeignKey("ProjectsId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
-                    b.HasOne("PortfolioCMS.Models.Tag", "Tag")
-                        .WithMany("ProjectTags")
-                        .HasForeignKey("TagId")
+                    b.HasOne("PortfolioCMS.Models.Tag", null)
+                        .WithMany()
+                        .HasForeignKey("TagsId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
-
-                    b.Navigation("Project");
-
-                    b.Navigation("Tag");
                 });
 
             modelBuilder.Entity("PortfolioCMS.Models.Category", b =>
@@ -166,13 +159,6 @@ namespace PortfolioCMS.Migrations
             modelBuilder.Entity("PortfolioCMS.Models.Project", b =>
                 {
                     b.Navigation("Images");
-
-                    b.Navigation("ProjectTags");
-                });
-
-            modelBuilder.Entity("PortfolioCMS.Models.Tag", b =>
-                {
-                    b.Navigation("ProjectTags");
                 });
 #pragma warning restore 612, 618
         }

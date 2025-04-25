@@ -5,13 +5,21 @@
 @inject NavigationManager Nav
 @inject IJSRuntime JS
 
+<div class="page-banner">
+    My Projects
+</div>
+
 <div class="container mt-4">
-    <a href="/projects/create" class="btn btn-success mb-3">+ Add New Project</a>
+    <a href="/projects/create" class="btn btn-success mb-3">
+        <i class="bi bi-plus-circle"></i> Add Project
+    </a>
 
-    <h3>My Projects</h3>
 
+
+    <!-- Keyword Search -->
     <InputText @bind-Value="keyword" placeholder="Search..." class="form-control mb-2" />
 
+    <!-- Sort -->
     <select @bind="sortOrder" class="form-select mb-3">
         <option value="">Sort by (default: newest)</option>
         <option value="title_asc">Title A-Z</option>
@@ -20,7 +28,31 @@
         <option value="date_desc">Newest First</option>
     </select>
 
-    <button class="btn btn-primary mb-3" @onclick="ApplyFilters">Apply</button>
+    <!-- Category Filter -->
+    <select @bind="selectedCategoryId" class="form-select mb-3">
+        <option value="">All Categories</option>
+        @foreach (var cat in categories)
+        {
+            <option value="@cat.Id">@cat.Name</option>
+        }
+    </select>
+
+    <!-- Tag Filter -->
+    <div class="mb-3">
+        <label>Tags:</label>
+        <div class="d-flex flex-wrap gap-2">
+            @foreach (var tag in tags)
+            {
+                <div class="form-check form-check-inline">
+                    <input class="form-check-input" type="checkbox" @onchange="e => ToggleTag(tag.Id, e.Value is true)" checked="@selectedTagIds.Contains(tag.Id)" />
+                    <label class="form-check-label">@tag.Name</label>
+                </div>
+            }
+        </div>
+    </div>
+
+    <!-- Apply -->
+    <button class="btn btn-outline-primary mb-3" @onclick="ApplyFilters">Apply Filters</button>
 
     @if (projects == null)
     {
@@ -32,36 +64,46 @@
     }
     else
     {
-        @foreach (var project in projects)
-        {
+        <div class="row">
+            @foreach (var project in projects)
+            {
+                <div class="col-md-4 mb-4">
+                    <div class="card shadow-sm h-100">
 
-            <div class="card mb-3 shadow-sm">
-                <div class="card-body">
-                    <h5 class="card-title">@project.Title</h5>
+                        @if (project.Images?.Any() == true)
+                        {
+                            <div class="project-banner" style="background-image: url('@("/" + project.Images.First().Path)');">
+                                <div class="project-banner-overlay">
+                                    <h5 class="card-title m-0">@project.Title</h5>
+                                </div>
+                            </div>
+                        }
+                        else
+                        {
+                            <div class="project-banner no-image">
+                                <div class="project-banner-overlay">
+                                    <h5 class="card-title m-0">@project.Title</h5>
+                                </div>
+                            </div>
+                        }
 
-                    @if (project.Images?.Any() == true)
-                    {
-                        <div class="d-flex flex-wrap gap-2 mb-2">
-                            @foreach (var img in project.Images)
-                            {
-                                <img src="@("/" + img.Path)" class="img-thumbnail" style="max-height: 150px;" />
-                            }
+                        <div class="card-body d-flex flex-column">
+                            <p class="card-text flex-grow-1">@project.Description</p>
+
+                            <div class="mt-2 d-flex gap-2 flex-wrap">
+                                <a href="@project.RepoLink" class="btn btn-outline-primary" target="_blank">View Repo</a>
+                                <a href="/projects/view/@project.Id" class="btn btn-outline-primary">View Project</a>
+                                <a href="/projects/edit/@project.Id" class="btn btn-sm btn-warning"><i class="bi bi-pencil-square"></i> Edit</a>
+                                <button class="btn btn-sm btn-danger" @onclick="() => DeleteProject(project.Id)">
+                                    <i class="bi bi-trash"></i> Delete
+                                </button>
+                            </div>
                         </div>
-                    }
-
-                    <div class="card-text">
-                        @project.Description
-                    </div>
-
-                    <div class="mt-2 d-flex gap-2 flex-wrap">
-                        <a href="@project.RepoLink" class="btn btn-outline-primary" target="_blank">View Repo</a>
-                        <a href="/projects/view/@project.Id" class="btn btn-outline-primary">View Project</a>
-                        <a href="/projects/edit/@project.Id" class="btn btn-warning btn-sm">Edit</a>
-                        <button class="btn btn-danger btn-sm" @onclick="() => DeleteProject(project.Id)">Delete</button>
                     </div>
                 </div>
-            </div>
-        }
+            }
+        </div>
+
     }
 </div>
 
@@ -69,20 +111,34 @@
     private List<Project>? projects;
     private string? keyword;
     private string? sortOrder;
+    private int? selectedCategoryId;
+    private List<int> selectedTagIds = new();
+    private List<Category> categories = new();
+    private List<Tag> tags = new();
 
     protected override async Task OnInitializedAsync()
+    {
+        categories = await ProjectService.GetAllCategoriesAsync();
+        tags = await ProjectService.GetAllTagsAsync();
+        await LoadProjects();
+    }
+
+    private async Task ApplyFilters()
     {
         await LoadProjects();
     }
 
     private async Task LoadProjects()
     {
-        projects = await ProjectService.GetFilteredProjectsAsync(keyword, sortOrder);
+        projects = await ProjectService.GetFilteredProjectsAsync(keyword, sortOrder, selectedCategoryId, selectedTagIds);
     }
 
-    private async Task ApplyFilters()
+    private void ToggleTag(int tagId, bool isChecked)
     {
-        await LoadProjects();
+        if (isChecked)
+            selectedTagIds.Add(tagId);
+        else
+            selectedTagIds.Remove(tagId);
     }
 
     private async Task DeleteProject(int id)
@@ -94,3 +150,4 @@
         await LoadProjects();
     }
 }
+

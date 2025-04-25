@@ -21,7 +21,6 @@
         initDropZone: function (dropZoneId, inputFileId) {
             const dropZone = document.getElementById(dropZoneId);
             const input = document.getElementById(inputFileId);
-
             if (!dropZone || !input) return;
 
             dropZone.addEventListener('dragover', e => {
@@ -38,12 +37,40 @@
                 dropZone.classList.remove('dragging');
 
                 const dt = new DataTransfer();
-                dt.items.add(e.dataTransfer.files[0]);
+                for (const file of e.dataTransfer.files) {
+                    dt.items.add(file);
+                }
                 input.files = dt.files;
                 input.dispatchEvent(new Event('change', { bubbles: true }));
             });
         }
     };
+
+
+    const themeKey = 'theme';
+    const darkClass = 'dark-mode';
+
+    function applyInitialTheme() {
+        const theme = localStorage.getItem(themeKey);
+        if (theme === 'dark') {
+            document.body.classList.add(darkClass);
+        }
+    }
+
+    function toggleTheme() {
+        const body = document.body;
+        const isDark = body.classList.toggle(darkClass);
+        localStorage.setItem(themeKey, isDark ? 'dark' : 'light');
+    }
+
+    window.setBodyClass = function (className) {
+        document.body.className = className;
+    }
+
+    const theme = localStorage.getItem('theme');
+    if (theme === 'dark') {
+        document.body.classList.add('dark-mode');
+    }
 </script>
 
 
