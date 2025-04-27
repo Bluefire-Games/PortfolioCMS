@@ -1,30 +1,29 @@
-﻿<button @onclick="ToggleTheme" class="@Class">@buttonText</button>
+﻿@inject IJSRuntime JS
+
+<button class="theme-toggle btn btn-sm" @onclick="ToggleTheme">
+    @(isDarkMode ? "🌙 Dark Mode" : "🔆 Light Mode")
+</button>
 
 @code {
-    private string buttonText = "🌙 Dark Mode";
-
-    [Parameter] public string? Class { get; set; }
-
-    [Inject] private IJSRuntime JS { get; set; } = default!;
-    private bool hasInitialized = false;
+    private bool isDarkMode = false;
 
     protected override async Task OnAfterRenderAsync(bool firstRender)
     {
-        if (firstRender && !hasInitialized)
+        if (firstRender)
         {
-            hasInitialized = true;
-
             var theme = await JS.InvokeAsync<string>("localStorage.getItem", "theme");
-            buttonText = theme == "dark" ? "☀️ Light Mode" : "🌙 Dark Mode";
+            isDarkMode = theme == "dark";
+            var bodyClass = isDarkMode ? "dark-mode" : "";
+            await JS.InvokeVoidAsync("setBodyClass", bodyClass);
             StateHasChanged();
         }
     }
 
     private async Task ToggleTheme()
     {
-        await JS.InvokeVoidAsync("toggleTheme");
-
-        var theme = await JS.InvokeAsync<string>("localStorage.getItem", "theme");
-        buttonText = theme == "dark" ? "☀️ Light Mode" : "🌙 Dark Mode";
+        isDarkMode = !isDarkMode;
+        var bodyClass = isDarkMode ? "dark-mode" : "";
+        await JS.InvokeVoidAsync("setBodyClass", bodyClass);
+        await JS.InvokeVoidAsync("localStorage.setItem", "theme", isDarkMode ? "dark" : "light");
     }
 }

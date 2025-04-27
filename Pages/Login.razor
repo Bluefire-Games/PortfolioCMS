@@ -1,0 +1,63 @@
+﻿@page "/login"
+@using System.ComponentModel.DataAnnotations
+@inject PortfolioCMS.Services.AuthService AuthService
+@inject NavigationManager Navigation
+
+<h3>Login</h3>
+
+<div class="container card p-4 mt-3">
+    <EditForm Model="loginModel" OnValidSubmit="HandleLogin">
+        <DataAnnotationsValidator />
+        <ValidationSummary />
+
+        <div class="mb-3">
+            <label>Email</label>
+            <InputText class="form-control" @bind-Value="loginModel.Email" />
+        </div>
+
+        <div class="mb-3">
+            <label>Password</label>
+            <InputText class="form-control" @bind-Value="loginModel.Password" type="password" />
+        </div>
+
+        <button class="btn btn-primary" type="submit">Login</button>
+        <p class="mt-2">
+            No account yet? <a href="/register" class="text-primary">Register here</a>.
+        </p>
+    </EditForm>
+
+    @if (!string.IsNullOrEmpty(errorMessage))
+    {
+        <div class="alert alert-danger mt-3">
+            @errorMessage
+        </div>
+    }
+</div>
+
+@code {
+    private LoginModel loginModel = new();
+    private string? errorMessage;
+
+    private async Task HandleLogin()
+    {
+        var success = await AuthService.LoginAsync(loginModel.Email, loginModel.Password);
+
+        if (success)
+        {
+            Navigation.NavigateTo("/projects");
+        }
+        else
+        {
+            errorMessage = "Invalid credentials. Please try again.";
+        }
+    }
+
+    public class LoginModel
+    {
+        [Required]
+        public string Email { get; set; } = "";
+
+        [Required]
+        public string Password { get; set; } = "";
+    }
+}

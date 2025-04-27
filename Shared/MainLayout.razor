@@ -1,38 +1,78 @@
 ﻿@inherits LayoutComponentBase
+@inject PortfolioCMS.Services.AuthService AuthService
+@inject NavigationManager Navigation
+@inject IJSRuntime JS
 
-<div class="top-navbar">
-    <div class="navbar-container">
-        <div class="nav-left">
-            <a class="navbar-brand" href="/">
-                <img src="images\42b2f55a-5255-44a6-bfd8-9a652c06b660.png" alt="Logo" class="navbar-logo" />
-            </a>
-            <NavLink class="nav-link" href="/" Match="NavLinkMatch.All">Home</NavLink>
-            <NavLink class="nav-link" href="/projects">Projects</NavLink>
-        </div>
+<div class="page-wrapper">
+    <div class="top-navbar">
+        <div class="navbar-container">
+            <div class="nav-left">
+                <a class="navbar-brand" href="/">
+                    <img src="images/42b2f55a-5255-44a6-bfd8-9a652c06b660.png" alt="Logo" class="navbar-logo" />
+                </a>
+                <NavLink class="nav-link" href="/" Match="NavLinkMatch.All">Home</NavLink>
+                <NavLink class="nav-link" href="/projects">Projects</NavLink>
+            </div>
+            <div class="nav-right d-flex align-items-center gap-2">
+                @if (isLoggedIn)
+                {
+                    <button class="btn btn-danger btn-sm" @onclick="Logout">Logout</button>
+                }
+                else
+                {
+                    <NavLink class="btn btn-primary btn-sm" href="/login">Login</NavLink>
+                }
 
-        <div class="nav-right">
-            <button class="theme-toggle btn btn-sm" @onclick="ToggleTheme">
-                @(isDarkMode ? "🌙 Dark Mode" : "🔆 Light Mode")
-            </button>
+                <button class="theme-toggle btn btn-sm" @onclick="ToggleTheme">
+                    @(isDarkMode ? "🌙 Dark Mode" : "🔆 Light Mode")
+                </button>
+            </div>
         </div>
     </div>
-</div>
 
-<div class="main-content p-4">
-    @Body
+    <main class="main-content">
+        @Body
+    </main>
+
+    <footer class="footer">
+        <p class="mb-1">© 2025 Bluefire Games. All rights reserved.</p>
+        <p>
+            Join our community on
+            <a href="https://discord.gg/dnvGRXvDWZ" target="_blank" class="text-decoration-none text-primary">
+                Discord
+            </a>!
+        </p>
+    </footer>
 </div>
 
 @code {
     private bool isDarkMode = false;
+    private bool isLoggedIn = false;
+    private bool _hasRendered = false;
+
+    protected override async Task OnInitializedAsync()
+    {
+        AuthService.OnAuthStateChanged += async () =>
+        {
+            isLoggedIn = await AuthService.IsLoggedInAsync();
+            StateHasChanged(); // 👈 REFRESH WHEN LOGIN/LOGOUT/REGISTER
+        };
+    }
 
     protected override async Task OnAfterRenderAsync(bool firstRender)
     {
-        if (firstRender)
+        if (firstRender && !_hasRendered)
         {
+            _hasRendered = true;
+
             var theme = await JS.InvokeAsync<string>("localStorage.getItem", "theme");
             isDarkMode = theme == "dark";
+
+            isLoggedIn = await AuthService.IsLoggedInAsync();
+
             var bodyClass = isDarkMode ? "dark-mode" : "";
             await JS.InvokeVoidAsync("setBodyClass", bodyClass);
+
             StateHasChanged();
         }
     }
@@ -45,5 +85,10 @@
         await JS.InvokeVoidAsync("localStorage.setItem", "theme", isDarkMode ? "dark" : "light");
     }
 
-    [Inject] private IJSRuntime JS { get; set; } = default!;
+    private async Task Logout()
+    {
+        await AuthService.LogoutAsync();
+        Navigation.NavigateTo("/");
+        StateHasChanged();
+    }
 }

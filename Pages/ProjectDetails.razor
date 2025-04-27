@@ -21,26 +21,57 @@ else
                 <div class="d-flex flex-wrap gap-2">
                     @foreach (var img in project.Images)
                     {
-                        <img src="@img.Path" class="img-thumbnail" style="max-height: 200px;" />
+                        <button class="image-button" @onclick="() => OpenImageModal(img.Path)">
+                            <img src="@img.Path" class="img-thumbnail thumbnail" />
+                        </button>
                     }
                 </div>
             }
         </div>
 
-        <p><strong>Repo:</strong> <a href="@project.RepoLink" target="_blank">@project.RepoLink</a></p>
+        @if (!string.IsNullOrEmpty(project.RepoLink))
+        {
+            <p><strong>Repo:</strong> <a href="@project.RepoLink" target="_blank">@project.RepoLink</a></p>
+        }
 
-        <div>
-            @((MarkupString)MarkdownHelper.ToHtml(project.Description))
-        </div>
+        @if (!string.IsNullOrEmpty(project.Description))
+        {
+            <div>
+                @((MarkupString)MarkdownHelper.ToHtml(project.Description))
+            </div>
+        }
     </div>
 
     <a href="/projects" class="btn btn-secondary mb-3">← Back to Projects</a>
+
+    @if (!string.IsNullOrEmpty(SelectedImagePath))
+    {
+        <div class="modal-backdrop" @onclick="CloseImageModal">
+            <div class="modal-content" @onclick:stopPropagation="true">
+                <img src="@SelectedImagePath" alt="Full Image" />
+                <button class="close-button" @onclick="CloseImageModal">✖</button>
+            </div>
+        </div>
+    }
+
+    @if (isModalOpen)
+    {
+        <div class="modal" @onclick="CloseModal">
+            <div class="modal-content" @onclick:stopPropagation>
+                <button class="modal-prev" @onclick="ShowPreviousImage">❮</button>
+                <img src="@modalImagePath" />
+                <button class="modal-next" @onclick="ShowNextImage">❯</button>
+                <button class="modal-close" @onclick="CloseModal">×</button>
+            </div>
+        </div>
+    }
 }
 
 @code {
     [Parameter] public int Id { get; set; }
 
     private Project? project;
+    private string? SelectedImagePath;
 
     protected override async Task OnInitializedAsync()
     {
@@ -48,4 +79,45 @@ else
             .Include(p => p.Images)
             .FirstOrDefaultAsync(p => p.Id == Id);
     }
+
+    private void OpenImageModal(string imagePath)
+    {
+        SelectedImagePath = imagePath;
+    }
+
+    private void CloseImageModal()
+    {
+        SelectedImagePath = null;
+    }
+
+    bool isModalOpen = false;
+string modalImagePath = "";
+int currentImageIndex = 0;
+List<string> imagePaths = new();
+
+void OpenModal(string path, int index)
+{
+    modalImagePath = path;
+    currentImageIndex = index;
+    isModalOpen = true;
+}
+
+void CloseModal()
+{
+    isModalOpen = false;
+}
+
+void ShowNextImage()
+{
+    if (imagePaths.Count == 0) return;
+    currentImageIndex = (currentImageIndex + 1) % imagePaths.Count;
+    modalImagePath = imagePaths[currentImageIndex];
+}
+
+void ShowPreviousImage()
+{
+    if (imagePaths.Count == 0) return;
+    currentImageIndex = (currentImageIndex - 1 + imagePaths.Count) % imagePaths.Count;
+    modalImagePath = imagePaths[currentImageIndex];
+}
 }
